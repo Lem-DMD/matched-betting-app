@@ -1,4 +1,3 @@
-
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -19,23 +18,25 @@ def scrape_hollywoodbets():
         driver.get("https://m.hollywoodbets.net/Sport/Soccer")
         time.sleep(5)
 
-        SCROLL_PAUSE = 2
-        last_height = driver.execute_script("return document.body.scrollHeight")
+        # Scroll to load more games
         for _ in range(10):
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(SCROLL_PAUSE)
-            new_height = driver.execute_script("return document.body.scrollHeight")
-            if new_height == last_height:
-                break
-            last_height = new_height
+            time.sleep(2)
 
         games = driver.find_elements(By.CLASS_NAME, "MatchCard")
         for game in games:
             try:
                 teams = game.find_element(By.CLASS_NAME, "MatchHeader").text
                 odds = [o.text for o in game.find_elements(By.CLASS_NAME, "Price")]
-                if teams and odds:
-                    matches.append({"match": teams, "odds": odds[:3]})
+
+                if teams and len(odds) >= 2:
+                    match = {
+                        "match": teams,
+                        "home_odds": float(odds[0]),
+                        "away_odds": float(odds[1]),
+                        "bookmaker": "HollywoodBets"
+                    }
+                    matches.append(match)
             except:
                 continue
 

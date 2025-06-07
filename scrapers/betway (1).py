@@ -6,7 +6,7 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 
-def scrape_lottostar():
+def scrape_betway():
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
@@ -16,7 +16,7 @@ def scrape_lottostar():
     try:
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=options)
-        driver.get("https://www.lottostar.co.za/sportsbook/soccer")
+        driver.get("https://www.betway.co.za/sport/soccer")
         time.sleep(5)
 
         for _ in range(10):
@@ -33,7 +33,7 @@ def scrape_lottostar():
                         "match": teams,
                         "home_odds": float(odds[0]),
                         "away_odds": float(odds[1]),
-                        "bookmaker": "Lottostar"
+                        "bookmaker": "Betway"
                     }
                     matches.append(match)
             except:
@@ -41,6 +41,6 @@ def scrape_lottostar():
 
         driver.quit()
     except Exception as e:
-        print("lottostar scraping failed:", e)
+        print("betway scraping failed:", e)
 
     return matches
