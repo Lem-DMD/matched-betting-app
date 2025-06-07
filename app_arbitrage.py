@@ -7,51 +7,57 @@ from scrapers.hollywoodbets import scrape_hollywoodbets
 from scrapers.sportingbet import scrape_sportingbet
 from scrapers.lottostar import scrape_lottostar
 
+from notifiers.telegram_alert import send_telegram_message
+
+# 🔒 Replace with your actual token from BotFather
+TELEGRAM_TOKEN = "7901789930:AAECXY7NaEyBL4ca493Rgszir61RQZPsSXA"
+TELEGRAM_CHAT_ID = "7012660852"
+
 st.set_page_config(page_title="SA Matched Betting Arbitrage", layout="wide")
 st.title("🇿🇦 SA Matched Betting Arbitrage Tool")
-st.caption("Compares odds from 6 bookmakers to find profitable arbitrage matchups.")
+st.caption("Compares odds from SA bookmakers to find profitable opportunities.")
 
 odds_data = []
 
-# Fetch odds from all bookmakers with error handling
-with st.spinner("Fetching odds from bookmakers..."):
+# Load all scrapers with safe error handling
+with st.spinner("🔍 Fetching bookmaker odds..."):
     try:
         odds_data.extend(scrape_betway())
         st.success("✅ Betway loaded")
     except Exception as e:
-        st.warning(f"❌ Betway failed: {e}")
+        st.warning(f"⚠️ Betway failed: {e}")
 
     try:
         odds_data.extend(scrape_supabets())
         st.success("✅ Supabets loaded")
     except Exception as e:
-        st.warning(f"❌ Supabets failed: {e}")
+        st.warning(f"⚠️ Supabets failed: {e}")
 
     try:
         odds_data.extend(scrape_betcoza())
         st.success("✅ Bet.co.za loaded")
     except Exception as e:
-        st.warning(f"❌ Bet.co.za failed: {e}")
+        st.warning(f"⚠️ Bet.co.za failed: {e}")
 
     try:
         odds_data.extend(scrape_hollywoodbets())
-        st.success("✅ Hollywoodbets loaded")
+        st.success("✅ HollywoodBets loaded")
     except Exception as e:
-        st.warning(f"❌ Hollywoodbets failed: {e}")
+        st.warning(f"⚠️ HollywoodBets failed: {e}")
 
     try:
         odds_data.extend(scrape_sportingbet())
         st.success("✅ Sportingbet loaded")
     except Exception as e:
-        st.warning(f"❌ Sportingbet failed: {e}")
+        st.warning(f"⚠️ Sportingbet failed: {e}")
 
     try:
         odds_data.extend(scrape_lottostar())
         st.success("✅ Lottostar loaded")
     except Exception as e:
-        st.warning(f"❌ Lottostar failed: {e}")
+        st.warning(f"⚠️ Lottostar failed: {e}")
 
-# Group and detect arbitrage
+# Arbitrage logic
 def detect_arbitrage(odds_data):
     alerts = []
     grouped = {}
@@ -92,9 +98,13 @@ def detect_arbitrage(odds_data):
 
 alerts = detect_arbitrage(odds_data)
 
+# Display section
 st.subheader("📈 Arbitrage Opportunities")
 if alerts:
     for alert in alerts:
         st.success(f"{alert['match']} | Profit: {alert['profit']}% | Home: {alert['home_odds']} | Away: {alert['away_odds']}")
+        # Send Telegram alert
+        msg = f"📣 Arbitrage Alert!\nMatch: {alert['match']}\nProfit: {alert['profit']}%\nHome: {alert['home_odds']}\nAway: {alert['away_odds']}"
+        send_telegram_message(TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, msg)
 else:
     st.info("No arbitrage opportunities found.")
