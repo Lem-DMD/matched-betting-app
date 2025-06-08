@@ -8,54 +8,53 @@ from scrapers.sportingbet import scrape_sportingbet
 from scrapers.lottostar import scrape_lottostar
 
 from notifiers.telegram_alert import send_telegram_message
+from streamlit_autorefresh import st_autorefresh
 
-# 🔒 Replace with your actual token from BotFather
-TELEGRAM_TOKEN = "7901789930:AAECXY7NaEyBL4ca493Rgszir61RQZPsSXA"
+# Telegram credentials
+TELEGRAM_TOKEN = "YOUR_BOT_TOKEN"
 TELEGRAM_CHAT_ID = "7012660852"
 
 st.set_page_config(page_title="SA Matched Betting Arbitrage", layout="wide")
+st_autorefresh(interval=600000, key="refresh")
 st.title("🇿🇦 SA Matched Betting Arbitrage Tool")
-st.caption("Compares odds from SA bookmakers to find profitable opportunities.")
+st.caption("Compare odds across bookmakers, find arbitrage, and suggest multibet combos.")
+
+# Filters
+selected_bookmakers = st.multiselect(
+    "📚 Select Bookmakers",
+    ["Betway", "Supabets", "Bet.co.za", "HollywoodBets", "Sportingbet", "Lottostar"],
+    default=["Betway", "Supabets", "Bet.co.za", "HollywoodBets", "Sportingbet", "Lottostar"]
+)
+
+league_filter = st.text_input("🏆 Filter by League Keyword", "")
 
 odds_data = []
 
-# Load all scrapers with safe error handling
-with st.spinner("🔍 Fetching bookmaker odds..."):
+with st.spinner("Fetching bookmaker odds..."):
     try:
         odds_data.extend(scrape_betway())
-        st.success("✅ Betway loaded")
     except Exception as e:
-        st.warning(f"⚠️ Betway failed: {e}")
-
+        st.warning(f"Betway failed: {e}")
     try:
         odds_data.extend(scrape_supabets())
-        st.success("✅ Supabets loaded")
     except Exception as e:
-        st.warning(f"⚠️ Supabets failed: {e}")
-
+        st.warning(f"Supabets failed: {e}")
     try:
         odds_data.extend(scrape_betcoza())
-        st.success("✅ Bet.co.za loaded")
     except Exception as e:
-        st.warning(f"⚠️ Bet.co.za failed: {e}")
-
+        st.warning(f"Bet.co.za failed: {e}")
     try:
         odds_data.extend(scrape_hollywoodbets())
-        st.success("✅ HollywoodBets loaded")
     except Exception as e:
-        st.warning(f"⚠️ HollywoodBets failed: {e}")
-
+        st.warning(f"HollywoodBets failed: {e}")
     try:
         odds_data.extend(scrape_sportingbet())
-        st.success("✅ Sportingbet loaded")
     except Exception as e:
-        st.warning(f"⚠️ Sportingbet failed: {e}")
-
+        st.warning(f"Sportingbet failed: {e}")
     try:
         odds_data.extend(scrape_lottostar())
-        st.success("✅ Lottostar loaded")
     except Exception as e:
-        st.warning(f"⚠️ Lottostar failed: {e}")
+        st.warning(f"Lottostar failed: {e}")
 
 # Arbitrage logic
 def detect_arbitrage(odds_data):
@@ -73,14 +72,18 @@ def detect_arbitrage(odds_data):
     for match, entries in grouped.items():
         best_home = 0
         best_away = 0
+        best_home_bk = ""
+        best_away_bk = ""
         for e in entries:
             try:
                 home = float(e["home_odds"])
                 away = float(e["away_odds"])
                 if home > best_home:
                     best_home = home
+                    best_home_bk = e["bookmaker"]
                 if away > best_away:
                     best_away = away
+                    best_away_bk = e["bookmaker"]
             except:
                 continue
         if best_home > 0 and best_away > 0:
@@ -91,6 +94,8 @@ def detect_arbitrage(odds_data):
                     "match": match,
                     "home_odds": best_home,
                     "away_odds": best_away,
+                    "home_bookmaker": best_home_bk,
+                    "away_bookmaker": best_away_bk,
                     "profit": profit
                 })
 
@@ -98,13 +103,28 @@ def detect_arbitrage(odds_data):
 
 alerts = detect_arbitrage(odds_data)
 
-# Display section
+# Apply filters
+filtered_alerts = []
+for alert in alerts:
+    if any(bk.lower() in alert["match"].lower() for bk in selected_bookmakers):
+        if league_filter.lower() in alert["match"].lower():
+            filtered_alerts.append(alert)
+
+# Display results
 st.subheader("📈 Arbitrage Opportunities")
-if alerts:
-    for alert in alerts:
-        st.success(f"{alert['match']} | Profit: {alert['profit']}% | Home: {alert['home_odds']} | Away: {alert['away_odds']}")
-        # Send Telegram alert
-        msg = f"📣 Arbitrage Alert!\nMatch: {alert['match']}\nProfit: {alert['profit']}%\nHome: {alert['home_odds']}\nAway: {alert['away_odds']}"
+if filtered_alerts:
+    for alert in filtered_alerts:
+        st.success(f"{alert['match']} | Profit: {alert['profit']}% | Home: {alert['home_odds']} ({alert['home_bookmaker']}) | Away: {alert['away_odds']} ({alert['away_bookmaker']})")
+        msg = f"📣 Arbitrage Alert!\nMatch: {alert['match']}\nProfit: {alert['profit']}%\nHome: {alert['home_odds']} ({alert['home_bookmaker']})\nAway: {alert['away_odds']} ({alert['away_bookmaker']})"
         send_telegram_message(TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, msg)
 else:
-    st.info("No arbitrage opportunities found.")
+    st.info("No opportunities matched your filters.")
+
+# Multibet Suggestion (Top 3 matches with best profit)
+st.subheader("🎯 Suggested Multibet Combos (Top 3 Profits)")
+if filtered_alerts:
+    top_matches = sorted(filtered_alerts, key=lambda x: x["profit"], reverse=True)[:3]
+    for i, match in enumerate(top_matches):
+        st.write(f"{i+1}. {match['match']} | Home: {match['home_odds']} | Away: {match['away_odds']}")
+else:
+    st.info("No multibet suggestions found.")

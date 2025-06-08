@@ -1,4 +1,3 @@
-
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -19,10 +18,6 @@ def scrape_sportingbet():
         driver.get("https://sports.sportingbet.co.za/en/sports/soccer")
         time.sleep(5)
 
-        for _ in range(10):
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(2)
-
         games = driver.find_elements(By.CLASS_NAME, "event-row")
         for game in games:
             try:
@@ -30,10 +25,10 @@ def scrape_sportingbet():
                 odds = [o.text for o in game.find_elements(By.CLASS_NAME, "outcome-price")]
                 if teams and len(odds) >= 2:
                     match = {
-                        "match": teams,
+                        "match": f"{teams} (Sportingbet)",
                         "home_odds": float(odds[0]),
                         "away_odds": float(odds[1]),
-                        "bookmaker": "SportingBet"
+                        "bookmaker": "Sportingbet"
                     }
                     matches.append(match)
             except:

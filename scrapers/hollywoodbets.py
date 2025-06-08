@@ -18,20 +18,14 @@ def scrape_hollywoodbets():
         driver.get("https://m.hollywoodbets.net/Sport/Soccer")
         time.sleep(5)
 
-        # Scroll to load more games
-        for _ in range(10):
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(2)
-
         games = driver.find_elements(By.CLASS_NAME, "MatchCard")
         for game in games:
             try:
                 teams = game.find_element(By.CLASS_NAME, "MatchHeader").text
                 odds = [o.text for o in game.find_elements(By.CLASS_NAME, "Price")]
-
                 if teams and len(odds) >= 2:
                     match = {
-                        "match": teams,
+                        "match": f"{teams} (HollywoodBets)",
                         "home_odds": float(odds[0]),
                         "away_odds": float(odds[1]),
                         "bookmaker": "HollywoodBets"

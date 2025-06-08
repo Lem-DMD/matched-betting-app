@@ -18,19 +18,14 @@ def scrape_betcoza():
         driver.get("https://www.bet.co.za/")
         time.sleep(5)
 
-        for _ in range(10):
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(2)
-
         games = driver.find_elements(By.CLASS_NAME, "event")
         for game in games:
             try:
                 teams = game.find_element(By.CLASS_NAME, "event-header").text
                 odds = [o.text for o in game.find_elements(By.CLASS_NAME, "price")]
-
                 if teams and len(odds) >= 2:
                     match = {
-                        "match": teams,
+                        "match": f"{teams} (Bet.co.za)",
                         "home_odds": float(odds[0]),
                         "away_odds": float(odds[1]),
                         "bookmaker": "Bet.co.za"

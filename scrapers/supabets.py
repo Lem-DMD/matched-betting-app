@@ -18,7 +18,7 @@ def scrape_supabets():
         driver.get("https://www.supabets.co.za/betting/sports/home/soccer")
         time.sleep(5)
 
-        for _ in range(10):
+        for _ in range(5):
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(2)
 
@@ -27,10 +27,9 @@ def scrape_supabets():
             try:
                 teams = game.find_element(By.CLASS_NAME, "event-header").text
                 odds = [o.text for o in game.find_elements(By.CLASS_NAME, "price")]
-
                 if teams and len(odds) >= 2:
                     match = {
-                        "match": teams,
+                        "match": f"{teams} (Supabets)",
                         "home_odds": float(odds[0]),
                         "away_odds": float(odds[1]),
                         "bookmaker": "Supabets"
